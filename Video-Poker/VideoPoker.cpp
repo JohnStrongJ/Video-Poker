@@ -7,7 +7,7 @@
 
 /*
  * Video Poker (WIP)
- * Currently shuffles and prints a deck of cards.
+ * Currently shuffles and prints a deck of cards, then deals five cards from the shuffled deck to the player's hand and prints the five cards.
  *
  * John Strong
  */
@@ -23,6 +23,12 @@ private:
 	int suit;
 
 public:
+	Card()
+	{
+		value = -1;
+		suit = -1;
+	}
+
 	Card(int value, int suit)
 	{
 		this->value = value;
@@ -38,32 +44,103 @@ public:
 	}
 };
 
-// The player's hand contains five cards, drawn from the top of the deck. (not used currently)
+// A hand contains five cards, drawn from the top of the deck.
 class Hand
 {
 private:
-	std::string card1;
-	std::string card2;
-	std::string card3;
-	std::string card4;
-	std::string card5;
+	Card card1;
+	Card card2;
+	Card card3;
+	Card card4;
+	Card card5;
 
 public:
 	Hand() {};
+
+	Hand(Card c1, Card c2, Card c3, Card c4, Card c5)
+	{
+		card1 = c1;
+		card2 = c2;
+		card3 = c3;
+		card4 = c4;
+		card5 = c5;
+	}
+
+	void setHand(Card c1, Card c2, Card c3, Card c4, Card c5)
+	{
+		card1 = c1;
+		card2 = c2;
+		card3 = c3;
+		card4 = c4;
+		card5 = c5;
+	}
+
+	void setCard(int n, Card card)
+	{
+		switch (n)
+		{
+		case 1:
+			card1 = card;
+			break;
+		case 2:
+			card2 = card;
+			break;
+		case 3:
+			card3 = card;
+			break;
+		case 4:
+			card4 = card;
+			break;
+		case 5:
+			card5 = card;
+			break;
+		default:
+			break;
+		}
+	}
+
+	std::array<Card, 5> getCards()
+	{
+		return { card1, card2, card3, card4, card5 };
+	}
 };
 
 // Not used currently.
 class Player
 {
-	int balance;
+private:
+	double balance;
 	Hand hand;
+
+public:
+	Player(double balance)
+	{
+		this->balance = balance;
+		hand = Hand();
+	}
+
+	void setHand(Hand h)
+	{
+		hand = h;
+	}
+
+	void printHand()
+	{
+		std::cout << '\n' << "Printing the player's Hand: " << '\n';
+		std::array<Card, 5> handArray = hand.getCards();
+		for (Card card : handArray)
+		{
+			std::cout << card.getValue() << ' ' << card.getSuit() << '\n';
+		}
+	}
 };
 
 // Dealer has a 52 card deck which can be shuffled.
 class Dealer
 {
 private:
-	std::array<Card, 52> deck{
+	std::array<Card, 52> deck
+	{
 		Card(ACE, HEARTS),
 		Card(TWO, HEARTS),
 		Card(THREE, HEARTS),
@@ -120,18 +197,28 @@ private:
 
 public:
 	Dealer() {};
-	void shuffle() {
+	void shuffle() 
+	{
 		std::random_device rd;
 		std::mt19937 g(rd());
 		std::shuffle(deck.begin(), deck.end(), g);
 	};
 
-	void printDeck() {
+	void printDeck() 
+	{
 		std::cout << "Deck:" << '\n';
 		for (Card card : deck)
 		{
 			std::cout << card.getValue() << ' ' << card.getSuit() << '\n';
 		}
+	}
+
+	// Deal the player five cards from the top of the deck.
+	Player deal(Player player)
+	{
+		Hand hand = Hand(deck[0], deck[1], deck[2], deck[3], deck[4]);
+		player.setHand(hand);
+		return player;
 	}
 };
 
@@ -141,6 +228,10 @@ int main()
 	dealer.printDeck();
 	dealer.shuffle();
 	dealer.printDeck();
+	Player player = Player(100);
+
+	player = dealer.deal(player);
+	player.printHand();
 
 	return 0;
 }
