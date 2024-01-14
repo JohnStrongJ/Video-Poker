@@ -7,13 +7,13 @@
 
 /*
  * Video Poker (WIP)
- * Currently shuffles and prints a deck of cards, then deals five cards from the shuffled deck to the player's hand and prints the five cards.
+ * Currently shuffles and prints a deck of cards, deals five cards from the shuffled deck to the player's hand, prints the five cards, and prints the evaluation of the hand.
  *
  * John Strong
  */
 
 // Represent a card as a value and a suit
-enum values { ACE = 1, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, TEN, JACK, QUEEN, KING };
+enum values { ACE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, TEN, JACK, QUEEN, KING };
 enum suit { HEARTS, DIAMONDS, CLUBS, SPADES };
 
 class Card
@@ -53,6 +53,19 @@ private:
 	Card card3;
 	Card card4;
 	Card card5;
+	std::array<std::string, 10> hands
+	{
+		"",
+		"Jacks or Better",
+		"Two Pair",
+		"Three of a Kind",
+		"Straight",
+		"Flush",
+		"Full House",
+		"Four of a Kind",
+		"Straight Flush",
+		"Royal Flush"
+	};
 
 public:
 	Hand() {};
@@ -103,9 +116,124 @@ public:
 	{
 		return { card1, card2, card3, card4, card5 };
 	}
+
+	// Returns the name of the payout represented by the hand or "Nothing" if the hand does not pay anything.
+	std::string evaluateHand()
+	{
+		// valueCounts has 13 elements which count the occurrence of value in a player's hand.
+		std::vector<int> valueCounts (13, 0);
+		valueCounts.at(static_cast<std::vector<int>::size_type>(card1.getValue())) += 1;
+		valueCounts.at(static_cast<std::vector<int>::size_type>(card2.getValue())) += 1;
+		valueCounts.at(static_cast<std::vector<int>::size_type>(card3.getValue())) += 1;
+		valueCounts.at(static_cast<std::vector<int>::size_type>(card4.getValue())) += 1;
+		valueCounts.at(static_cast<std::vector<int>::size_type>(card5.getValue())) += 1;
+
+		int pairCount{ 0 };
+		bool jacksOrBetter{ false };
+		bool threeOfAKind{ false };
+		bool straight{ false };
+		bool broadway{ false };
+		bool flush{ false };
+
+		for (int i{ 0 }; i < valueCounts.size(); i++)
+		{
+			int count{ valueCounts.at(static_cast<std::vector<int>::size_type>(i))};
+			if (count == 2)
+			{
+				pairCount++;
+				if (i >= 10 || i == 0)
+				{
+					jacksOrBetter = true;
+				}
+			}
+			else if (count == 3)
+			{
+				threeOfAKind = true;
+			}
+			else if (count == 4)
+			{
+				return "Four of a Kind";
+			}
+			else if (count == 1)
+			{
+				if ((i == 9) && 
+					(valueCounts.at(static_cast<std::vector<int>::size_type>(0)) == 1) && 
+					(valueCounts.at(static_cast<std::vector<int>::size_type>(i+1)) == 1) && 
+					(valueCounts.at(static_cast<std::vector<int>::size_type>(i+2)) == 1) && 
+					(valueCounts.at(static_cast<std::vector<int>::size_type>(i+3)) == 1))
+				{
+					broadway = true;
+				}
+				else if ((i <= 8) && 
+					     (valueCounts.at(static_cast<std::vector<int>::size_type>(i + 1)) == 1) && 
+						 (valueCounts.at(static_cast<std::vector<int>::size_type>(i + 2)) == 1) && 
+						 (valueCounts.at(static_cast<std::vector<int>::size_type>(i + 3)) == 1) && 
+						 (valueCounts.at(static_cast<std::vector<int>::size_type>(i + 3)) == 1))
+				{
+					straight = true;
+				}
+			}
+		}
+
+		if (pairCount == 2)
+		{
+			return "Two Pair";
+		}
+
+		if (threeOfAKind)
+		{
+			if (pairCount == 1)
+			{
+				return "Full House";
+			}
+			else
+			{
+				return "Three of a Kind";
+			}
+		}
+
+		if (jacksOrBetter)
+		{
+			return "Jacks or Better";
+		}
+
+		// Check for flush by counting the occurence of any suit. If there are 5 of the same suit, then there is a flush.
+		std::vector<int> suitCounts(4, 0);
+		suitCounts.at(static_cast<std::vector<int>::size_type>(card1.getSuit())) += 1;
+		suitCounts.at(static_cast<std::vector<int>::size_type>(card2.getSuit())) += 1;
+		suitCounts.at(static_cast<std::vector<int>::size_type>(card3.getSuit())) += 1;
+		suitCounts.at(static_cast<std::vector<int>::size_type>(card4.getSuit())) += 1;
+		suitCounts.at(static_cast<std::vector<int>::size_type>(card5.getSuit())) += 1;
+
+		if ((suitCounts.at(static_cast<std::vector<int>::size_type>(0)) == 5) ||
+			(suitCounts.at(static_cast<std::vector<int>::size_type>(1)) == 5) ||
+			(suitCounts.at(static_cast<std::vector<int>::size_type>(2)) == 5) ||
+			(suitCounts.at(static_cast<std::vector<int>::size_type>(3)) == 5))
+		{
+			flush = true;
+		}
+
+		if (flush)
+		{
+			if (straight)
+			{
+				return "Straight Flush";
+			}
+			if (broadway)
+			{
+				return "Royal Flush";
+			}
+			return "Flush";
+		}
+
+		if (straight || broadway)
+		{
+			return "Straight";
+		}
+		return "Nothing";
+	}
 };
 
-// Not used currently.
 class Player
 {
 private:
@@ -124,6 +252,11 @@ public:
 		hand = h;
 	}
 
+	Hand getHand()
+	{
+		return hand;
+	}
+
 	void printHand()
 	{
 		std::cout << '\n' << "Printing the player's Hand: " << '\n';
@@ -133,6 +266,8 @@ public:
 			std::cout << card.getValue() << ' ' << card.getSuit() << '\n';
 		}
 	}
+
+
 };
 
 // Dealer has a 52 card deck which can be shuffled.
@@ -232,6 +367,7 @@ int main()
 
 	player = dealer.deal(player);
 	player.printHand();
+	std::cout << player.getHand().evaluateHand();
 
 	return 0;
 }
